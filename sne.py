@@ -8,6 +8,7 @@ Created on Tue Oct 14 11:52:18 2025
 import torch
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler 
+import numpy as np
 
 class StochasticNeighborEmbedding(torch.nn.Module):
     def __init__(self, n_components=2, perplexity=30.0):
@@ -136,15 +137,23 @@ class StochasticNeighborEmbedding(torch.nn.Module):
 
         return Y.detach().cpu().numpy() 
 
+if __name__ == "__main__":
+    from sklearn.datasets import load_digits
+    import matplotlib.pyplot as plt
+    #torch.autograd.set_detect_anomaly(True)
 
-from sklearn.datasets import load_digits
-import matplotlib.pyplot as plt
-#torch.autograd.set_detect_anomaly(True)
-
-X, y = load_digits(return_X_y=True)
-sne = StochasticNeighborEmbedding(n_components=2, perplexity=30.0)
-Y = sne.fit_transform(X, n_iter=1000, lr=50)
-
-plt.scatter(Y[:,0], Y[:,1], c=y, cmap='tab10', s=10)
-plt.title("SNE Visualization (PyTorch)")
-plt.show()
+    X, y = load_digits(return_X_y=True)
+    unique_labels = np.unique(y)
+    sne = StochasticNeighborEmbedding(n_components=2, perplexity=30.0)
+    Y = sne.fit_transform(X, n_iter=1000, lr=50)
+    for label in unique_labels:
+        # Select indices where y equals the current label
+        mask = y == label
+        plt.scatter(Y[mask, 0], Y[mask, 1], c=plt.cm.tab10(label), s=10, label=str(label))
+        
+    
+    plt.legend(bbox_to_anchor=(1.15, 1), loc='upper right')
+        
+    plt.scatter(Y[:,0], Y[:,1], c=y, cmap='tab10', s=10)
+    plt.title("SNE Visualization")
+    plt.show()
