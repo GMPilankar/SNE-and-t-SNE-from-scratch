@@ -23,9 +23,12 @@ class StochasticNeighborEmbedding(torch.nn.Module):
 
     def _pairwise_distances(self, X):
         # Compute squared pairwise distances
-        sum_X = torch.sum(X**2, dim=1)
-        dists = torch.addmm(sum_X.unsqueeze(1), X, X.t(), beta=1, alpha=-2)
+        sum_X = torch.sum(X**2, dim=1, keepdim=True)
+        sum_X = sum_X.expand((X.shape[0], X.shape[0]))
+        sum_X = sum_X + sum_X.t()
+        dists = torch.addmm(sum_X, X, X.t(), beta=1, alpha=-2)
         dists = torch.clamp(dists, min=0.0)
+        
         return dists
 
     def _compute_H_conditionalP(self, D, beta, i):
@@ -36,7 +39,7 @@ class StochasticNeighborEmbedding(torch.nn.Module):
         sumP = torch.sum(P)
         sumP = torch.clamp(sumP, min=1e-12)
         P_new = P / sumP
-        #P_new = torch.clamp(P_new, min=1e-12)
+        P_new = torch.clamp(P_new, min=1e-12)
         H = -torch.sum(P_new * torch.log2(P_new))
         
         return H, P_new
@@ -44,8 +47,8 @@ class StochasticNeighborEmbedding(torch.nn.Module):
     def _compute_beta(self, D , tol=1e-5, max_iter=150):
         n = D.shape[0]
         logU = torch.log2(torch.tensor(self.perplexity))
-        _beta = torch.ones(n , 1, device=self.device)
-        _beta.to(torch.float64)
+        _beta = torch.ones(n , 1, device=self.device, dtype = torch.float64)
+        
         
         for i in range(n):
             betamin, betamax = -float('inf'), float('inf')
